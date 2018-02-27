@@ -2,16 +2,12 @@
 
 import UIKit
 import PlaygroundSupport
-
-let urlString = "https://dl.dropboxusercontent.com/s/2iodh4vg0eortkl/facts.json"
-
-let url = URL(string: urlString)!
-
+PlaygroundPage.current.needsIndefiniteExecution = true
 
 struct Fact: Decodable {
     let title: String?
     let description: String?
-    let imaheHref: String?
+    let imageHref: URL?
 }
 
 struct Factum: Decodable {
@@ -24,45 +20,39 @@ struct Factum: Decodable {
     }
 }
 
+enum Result<V, E: Swift.Error> {
+    case success(V)
+    case failure(E)
+}
 
-URLSession.shared.dataTask(with: url) { (data, response, error) in
-    //guard let data: Data = data else { return }
-    guard let data: Data = String(data: data!, encoding: .isoLatin1)?.data(using: .utf8) else { return }
+enum APIError: Swift.Error {
+    case networkError
+    case jsonDecodingError
+}
+
+struct FactsDataSource {
+    private let urlString = "https://dl.dropboxusercontent.com/s/2iodh4vg0eortkl/facts.json"
     
-    let factum = try? JSONDecoder().decode(Factum.self, from: data)
-    print(factum as Any)
+    public func fetch(completionHandler: ( @escaping (Result<Factum, APIError>) -> Void)) {
+        let url = URL(string: urlString)!
+        URLSession.shared.dataTask(with: url) { (data, response, error) in
+            if error != nil {
+                return completionHandler(.failure(.networkError))
+            }
+            guard
+                let data: Data = String(data: data!, encoding: .isoLatin1)?.data(using: .utf8),
+                let factum = try? JSONDecoder().decode(Factum.self, from: data)
+            else {
+                return completionHandler(.failure(.jsonDecodingError))
+            }
+            
+            return completionHandler(.success(factum))
+        }.resume()
     }
-    .resume()
+}
 
+let datasource = FactsDataSource()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-PlaygroundPage.current.needsIndefiniteExecution = true
-
+datasource.fetch { result in
+    print(result)
+}
