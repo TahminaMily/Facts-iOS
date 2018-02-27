@@ -7,6 +7,7 @@ target 'Facts' do
 
   # Pods for Facts
   pod 'Kingfisher', '~> 4.0'
+  pod 'SnapKit', '~> 4.0.0'
 
   target 'FactsTests' do
     inherit! :search_paths
